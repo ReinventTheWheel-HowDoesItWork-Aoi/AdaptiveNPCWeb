@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdaptiveNPCWeb - Living NPCs Demo</title>
+    <meta name="description" content="Experience truly adaptive NPCs with memories, emotions, and emergent stories">
+    <style>
+        :root {
+            --adaptive-primary: #2C3E50;
+            --adaptive-accent: #3498DB;
+            --adaptive-emotion: #E74C3C;
+            --adaptive-success: #27AE60;
+            --adaptive-warning: #F39C12;
+            --adaptive-bg: #ECF0F1;
+            --adaptive-card: #FFFFFF;
+            --adaptive-text: #2C3E50;
+            --adaptive-text-light: #7F8C8D;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--adaptive-bg);
+            color: var(--adaptive-text);
+            line-height: 1.6;
+        }
+        
+        header {
+            background: var(--adaptive-primary);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .demo-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 2rem;
+            padding: 0 2rem;
+        }
+        
+        .panel {
+            background: var(--adaptive-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .panel h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--adaptive-primary);
+        }
+        
+        /* NPC List Panel */
+        .npc-item {
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            background: var(--adaptive-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .npc-item:hover {
+            transform: translateX(4px);
+            border-color: var(--adaptive-accent);
+        }
+        
+        .npc-item.selected {
+            background: var(--adaptive-accent);
+            color: white;
+        }
+        
+        .npc-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .npc-role {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .npc-mood {
+            display: inline-block;
+            margin-top: 0.3rem;
+            font-size: 1.5rem;
+        }
+        
+        /* World View */
+        .world-canvas {
+            width: 100%;
+            height: 400px;
+            background: #F8F9FA;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .npc-avatar {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            background: white;
+            border: 3px solid var(--adaptive-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        
+        .npc-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 20;
+        }
+        
+        .npc-avatar.talking {
+            animation: talking 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes talking {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .speech-bubble {
+            position: absolute;
+            background: white;
+            padding: 0.8rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 200px;
+            z-index: 30;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeInUp 0.3s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid white;
+        }
+        
+        /* Interaction Panel */
+        .interaction-panel {
+            margin-top: 1rem;
+        }
+        
+        .interaction-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--adaptive-accent);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-success {
+            background: var(--adaptive-success);
+        }
+        
+        .btn-warning {
+            background: var(--adaptive-warning);
+        }
+        
+        .btn-emotion {
+            background: var(--adaptive-emotion);
+        }
+        
+        /* Info Panel */
+        .info-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #E8E9EA;
+        }
+        
+        .info-section:last-child {
+            border-bottom: none;
+        }
+        
+        .info-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+            color: var(--adaptive-primary);
+        }
+        
+        .personality-trait {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+        
+        .trait-name {
+            flex: 0 0 120px;
+            font-size: 0.9rem;
+            color: var(--adaptive-text-light);
+        }
+        
+        .trait-bar {
+            flex: 1;
+            height: 8px;
+            background: #E8E9EA;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .trait-fill {
+            height: 100%;
+            background: var(--adaptive-accent);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .trait-quantum {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(52, 152, 219, 0.3);
+            border-radius: 4px;
+        }
+        
+        .emotional-state {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .emotion-tag {
+            padding: 0.4rem 0.8rem;
+            background: var(--adaptive-bg);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .emotion-value {
+            font-weight: 600;
+            color: var(--adaptive-primary);
+        }
+        
+        .relationship-item {
+            padding: 0.8rem;
+            background: var(--adaptive-bg);
+            border-radius: 8px;
+            margin-bottom: 0.6rem;
+        }
+        
+        .relationship-name {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        
+        .relationship-metrics {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--adaptive-text-light);
+        }
+        
+        .memory-item {
+            padding: 0.8rem;
+            background: var(--adaptive-bg);
+            border-radius: 8px;
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+        }
+        
+        .memory-time {
+            font-size: 0.8rem;
+            color: var(--adaptive-text-light);
+            margin-top: 0.3rem;
+        }
+        
+        /* Loading and Status */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 1.1rem;
+            color: var(--adaptive-text-light);
+        }
+        
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--adaptive-primary);
+            color: white;
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--adaptive-success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .demo-container {
+                grid-template-columns: 1fr;
+                max-width: 800px;
+            }
+            
+            .panel {
+                margin-bottom: 1rem;
+            }
+            
+            .npc-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            
+            .npc-item {
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AdaptiveNPCWeb</h1>
+        <p>Experience NPCs That Remember, Feel, and Evolve</p>
+    </header>
+    
+    <main class="demo-container">
+        <section class="panel npc-list">
+            <h2>Village NPCs</h2>
+            <div id="npc-list-container">
+                <div class="loading">Initializing NPCs...</div>
+            </div>
+        </section>
+        
+        <section class="panel world-view">
+            <h2>Village Square</h2>
+            <div class="world-canvas" id="world-canvas">
+                <!-- NPCs will be rendered here -->
+            </div>
+            <div class="interaction-panel">
+                <h3>Interact with <span id="selected-npc-name">Select an NPC</span></h3>
+                <div class="interaction-buttons" id="interaction-buttons">
+                    <button class="btn" onclick="interact('greet')">👋 Greet</button>
+                    <button class="btn btn-success" onclick="interact('help')">🤝 Offer Help</button>
+                    <button class="btn btn-warning" onclick="interact('question')">❓ Ask Question</button>
+                    <button class="btn btn-emotion" onclick="interact('compliment')">💫 Compliment</button>
+                    <button class="btn" onclick="interact('trade')">🎁 Trade</button>
+                    <button class="btn btn-emotion" onclick="interact('joke')">😄 Tell Joke</button>
+                </div>
+                <div id="interaction-response"></div>
+            </div>
+        </section>
+        
+        <section class="panel info-panel">
+            <h2>NPC Details</h2>
+            <div id="npc-details">
+                <div class="loading">Select an NPC to view details</div>
+            </div>
+        </section>
+    </main>
+    
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-indicator"></span>
+            <span>AdaptiveNPCWeb Active</span>
+        </div>
+        <div class="status-item">
+            <span>NPCs: <span id="npc-count">0</span></span>
+        </div>
+        <div class="status-item">
+            <span>Memories: <span id="memory-count">0</span></span>
+        </div>
+        <div class="status-item">
+            <span>FPS: <span id="fps-counter">60</span></span>
+        </div>
+    </div>
+
+    <script type="module">
+        // Mock implementation of AdaptiveNPCWeb for demo
+        class MockAdaptiveNPCWeb {
+            constructor() {
+                this.npcs = [];
+                this.selectedNPC = null;
+                this.player = { id: 'player', name: 'Player' };
+                this.worldTime = 0;
+                this.fps = 60;
+                
+                // Start systems
+                this.initialize();
+            }
+            
+            async initialize() {
+                // Create demo NPCs
+                await this.createDemoNPCs();
+                
+                // Start update loop
+                this.startUpdateLoop();
+                
+                // Render initial state
+                this.renderNPCList();
+                this.renderWorld();
+                
+                // Start FPS counter
+                this.startFPSCounter();
+            }
+            
+            async createDemoNPCs() {
+                const npcConfigs = [
+                    {
+                        name: 'Elena',
+                        role: 'Blacksmith',
+                        emoji: '🔨',
+                        personality: { hardworking: 0.9, friendly: 0.8, creative: 0.7 },
+                        position: { x: 20, y: 30 }
+                    },
+                    {
+                        name: 'Marcus',
+                        role: 'Merchant',
+                        emoji: '💰',
+                        personality: { shrewd: 0.8, talkative: 0.9, opportunistic: 0.7 },
+                        position: { x: 70, y: 20 }
+                    },
+                    {
+                        name: 'Sofia',
+                        role: 'Healer',
+                        emoji: '🌿',
+                        personality: { compassionate: 0.9, wise: 0.8, introverted: 0.6 },
+                        position: { x: 80, y: 70 }
+                    },
+                    {
+                        name: 'Thomas',
+                        role: 'Guard',
+                        emoji: '⚔️',
+                        personality: { dutiful: 0.9, suspicious: 0.7, protective: 0.8 },
+                        position: { x: 30, y: 70 }
+                    },
+                    {
+                        name: 'Maya',
+                        role: 'Bard',
+                        emoji: '🎵',
+                        personality: { charismatic: 0.9, curious: 0.8, dramatic: 0.7 },
+                        position: { x: 50, y: 50 }
+                    }
+                ];
+                
+                for (const config of npcConfigs) {
+                    const npc = await this.createNPC(config);
+                    this.npcs.push(npc);
+                }
+                
+                // Create some initial relationships
+                this.createInitialRelationships();
+            }
+            
+            async createNPC(config) {
+                const npc = {
+                    id: `npc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    ...config,
+                    emotionalState: {
+                        happiness: 0.7,
+                        energy: 0.8,
+                        stress: 0.2,
+                        mood: this.calculateMood(0.7, 0.8, 0.2)
+                    },
+                    memories: [],
+                    relationships: new Map(),
+                    goals: this.generateGoals(config.personality),
+                    quantumPersonality: this.createQuantumPersonality(config.personality),
+                    awareness: 1.0,
+                    lastInteraction: 0
+                };
+                
+                // Add initial memory
+                npc.memories.push({
+                    type: 'birth',
+                    content: `I am ${npc.name}, the ${npc.role}`,
+                    timestamp: Date.now(),
+                    importance: 1.0
+                });
+                
+                return npc;
+            }
+            
+            createQuantumPersonality(baseTraits) {
+                const quantum = {};
+                for (const [trait, baseValue] of Object.entries(baseTraits)) {
+                    quantum[trait] = {
+                        value: baseValue,
+                        uncertainty: 0.1 + Math.random() * 0.1,
+                        coherence: 1.0
+                    };
+                }
+                return quantum;
+            }
+            
+            generateGoals(personality) {
+                const goals = [];
+                
+                if (personality.hardworking > 0.7) {
+                    goals.push({ type: 'work', description: 'Master my craft', progress: 0.3 });
+                }
+                if (personality.friendly > 0.7) {
+                    goals.push({ type: 'social', description: 'Make new friends', progress: 0.1 });
+                }
+                if (personality.curious > 0.7) {
+                    goals.push({ type: 'knowledge', description: 'Learn something new', progress: 0.2 });
+                }
+                
+                return goals;
+            }
+            
+            createInitialRelationships() {
+                // Elena and Marcus know each other
+                this.addRelationship('Elena', 'Marcus', { trust: 0.6, affection: 0.5, respect: 0.7 });
+                
+                // Sofia knows everyone a little
+                for (const npc of this.npcs) {
+                    if (npc.name !== 'Sofia') {
+                        this.addRelationship('Sofia', npc.name, { trust: 0.4, affection: 0.4, respect: 0.5 });
+                    }
+                }
+                
+                // Thomas is suspicious of Maya
+                this.addRelationship('Thomas', 'Maya', { trust: 0.3, affection: 0.4, respect: 0.5 });
+            }
+            
+            addRelationship(name1, name2, metrics) {
+                const npc1 = this.npcs.find(n => n.name === name1);
+                const npc2 = this.npcs.find(n => n.name === name2);
+                
+                if (npc1 && npc2) {
+                    npc1.relationships.set(npc2.id, { ...metrics, name: npc2.name, history: [] });
+                    npc2.relationships.set(npc1.id, { ...metrics, name: npc1.name, history: [] });
+                }
+            }
+            
+            calculateMood(happiness, energy, stress) {
+                if (stress > 0.7) return '😰';
+                if (happiness > 0.7 && energy > 0.6) return '😊';
+                if (happiness < 0.3) return '😢';
+                if (energy < 0.3) return '😴';
+                return '😐';
+            }
+            
+            startUpdateLoop() {
+                setInterval(() => {
+                    this.worldTime++;
+                    this.updateNPCs();
+                    this.updateUI();
+                }, 1000 / 60); // 60 FPS
+            }
+            
+            updateNPCs() {
+                for (const npc of this.npcs) {
+                    // Update emotional decay
+                    npc.emotionalState.happiness *= 0.9999;
+                    npc.emotionalState.energy *= 0.9998;
+                    npc.emotionalState.stress *= 0.9997;
+                    
+                    // Update quantum personality coherence
+                    for (const trait of Object.values(npc.quantumPersonality)) {
+                        trait.coherence *= 0.9999;
+                        if (trait.coherence < 0.3) {
+                            trait.coherence = 1.0;
+                            trait.value += (Math.random() - 0.5) * trait.uncertainty;
+                            trait.value = Math.max(0, Math.min(1, trait.value));
+                        }
+                    }
+                    
+                    // Update mood
+                    npc.emotionalState.mood = this.calculateMood(
+                        npc.emotionalState.happiness,
+                        npc.emotionalState.energy,
+                        npc.emotionalState.stress
+                    );
+                    
+                    // Random movement
+                    if (Math.random() < 0.002) {
+                        npc.position.x += (Math.random() - 0.5) * 10;
+                        npc.position.y += (Math.random() - 0.5) * 10;
+                        npc.position.x = Math.max(5, Math.min(95, npc.position.x));
+                        npc.position.y = Math.max(5, Math.min(95, npc.position.y));
+                    }
+                }
+            }
+            
+            updateUI() {
+                // Update counts
+                document.getElementById('npc-count').textContent = this.npcs.length;
+                document.getElementById('memory-count').textContent = 
+                    this.npcs.reduce((sum, npc) => sum + npc.memories.length, 0);
+                
+                // Update selected NPC details
+                if (this.selectedNPC) {
+                    this.renderNPCDetails(this.selectedNPC);
+                }
+            }
+            
+            startFPSCounter() {
+                let frames = 0;
+                let lastTime = performance.now();
+                
+                const countFPS = () => {
+                    frames++;
+                    const now = performance.now();
+                    
+                    if (now - lastTime >= 1000) {
+                        this.fps = frames;
+                        document.getElementById('fps-counter').textContent = frames;
+                        frames = 0;
+                        lastTime = now;
+                    }
+                    
+                    requestAnimationFrame(countFPS);
+                };
+                
+                requestAnimationFrame(countFPS);
+            }
+            
+            renderNPCList() {
+                const container = document.getElementById('npc-list-container');
+                container.innerHTML = '';
+                
+                for (const npc of this.npcs) {
+                    const item = document.createElement('div');
+                    item.className = 'npc-item';
+                    if (this.selectedNPC?.id === npc.id) {
+                        item.className += ' selected';
+                    }
+                    
+                    item.innerHTML = `
+                        <div class="npc-name">${npc.name}</div>
+                        <div class="npc-role">${npc.role}</div>
+                        <div class="npc-mood">${npc.emotionalState.mood}</div>
+                    `;
+                    
+                    item.onclick = () => this.selectNPC(npc);
+                    container.appendChild(item);
+                }
+            }
+            
+            renderWorld() {
+                const canvas = document.getElementById('world-canvas');
+                canvas.innerHTML = '';
+                
+                for (const npc of this.npcs) {
+                    const avatar = document.createElement('div');
+                    avatar.className = 'npc-avatar';
+                    avatar.style.left = `${npc.position.x}%`;
+                    avatar.style.top = `${npc.position.y}%`;
+                    avatar.textContent = npc.emoji;
+                    avatar.title = npc.name;
+                    
+                    avatar.onclick = () => this.selectNPC(npc);
+                    
+                    canvas.appendChild(avatar);
+                }
+            }
+            
+            selectNPC(npc) {
+                this.selectedNPC = npc;
+                document.getElementById('selected-npc-name').textContent = npc.name;
+                
+                // Update UI
+                this.renderNPCList();
+                this.renderNPCDetails(npc);
+                
+                // Highlight in world
+                const avatars = document.querySelectorAll('.npc-avatar');
+                avatars.forEach((avatar, index) => {
+                    if (this.npcs[index].id === npc.id) {
+                        avatar.style.borderColor = 'var(--adaptive-accent)';
+                        avatar.style.transform = 'scale(1.1)';
+                    } else {
+                        avatar.style.borderColor = 'var(--adaptive-primary)';
+                        avatar.style.transform = 'scale(1)';
+                    }
+                });
+            }
+            
+            renderNPCDetails(npc) {
+                const container = document.getElementById('npc-details');
+                
+                // Personality traits
+                let personalityHTML = '<div class="info-section"><h3>Personality</h3>';
+                for (const [trait, quantum] of Object.entries(npc.quantumPersonality)) {
+                    const percentage = Math.round(quantum.value * 100);
+                    const uncertainty = Math.round(quantum.uncertainty * 100);
+                    personalityHTML += `
+                        <div class="personality-trait">
+                            <span class="trait-name">${trait}</span>
+                            <div class="trait-bar">
+                                <div class="trait-fill" style="width: ${percentage}%"></div>
+                                <div class="trait-quantum" style="left: ${Math.max(0, percentage - uncertainty)}%; width: ${uncertainty * 2}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                personalityHTML += '</div>';
+                
+                // Emotional state
+                const emotionHTML = `
+                    <div class="info-section">
+                        <h3>Emotional State</h3>
+                        <div class="emotional-state">
+                            <div class="emotion-tag">
+                                😊 Happiness: <span class="emotion-value">${Math.round(npc.emotionalState.happiness * 100)}%</span>
+                            </div>
+                            <div class="emotion-tag">
+                                ⚡ Energy: <span class="emotion-value">${Math.round(npc.emotionalState.energy * 100)}%</span>
+                            </div>
+                            <div class="emotion-tag">
+                                😰 Stress: <span class="emotion-value">${Math.round(npc.emotionalState.stress * 100)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Relationships
+                let relationshipHTML = '<div class="info-section"><h3>Relationships</h3>';
+                if (npc.relationships.size > 0) {
+                    for (const [id, rel] of npc.relationships) {
+                        relationshipHTML += `
+                            <div class="relationship-item">
+                                <div class="relationship-name">${rel.name}</div>
+                                <div class="relationship-metrics">
+                                    <span>Trust: ${Math.round(rel.trust * 100)}%</span>
+                                    <span>Affection: ${Math.round(rel.affection * 100)}%</span>
+                                    <span>Respect: ${Math.round(rel.respect * 100)}%</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    relationshipHTML += '<p style="color: var(--adaptive-text-light); font-size: 0.9rem;">No relationships yet</p>';
+                }
+                relationshipHTML += '</div>';
+                
+                // Recent memories
+                let memoryHTML = '<div class="info-section"><h3>Recent Memories</h3>';
+                const recentMemories = npc.memories.slice(-3).reverse();
+                for (const memory of recentMemories) {
+                    const timeAgo = this.getTimeAgo(memory.timestamp);
+                    memoryHTML += `
+                        <div class="memory-item">
+                            ${memory.content}
+                            <div class="memory-time">${timeAgo}</div>
+                        </div>
+                    `;
+                }
+                memoryHTML += '</div>';
+                
+                container.innerHTML = personalityHTML + emotionHTML + relationshipHTML + memoryHTML;
+            }
+            
+            getTimeAgo(timestamp) {
+                const seconds = Math.floor((Date.now() - timestamp) / 1000);
+                if (seconds < 60) return `${seconds} seconds ago`;
+                const minutes = Math.floor(seconds / 60);
+                if (minutes < 60) return `${minutes} minutes ago`;
+                const hours = Math.floor(minutes / 60);
+                return `${hours} hours ago`;
+            }
+            
+            async processInteraction(action) {
+                if (!this.selectedNPC) return;
+                
+                const npc = this.selectedNPC;
+                const interactions = {
+                    greet: {
+                        playerText: "Hello there!",
+                        emotional: { happiness: 0.1, energy: 0.05, stress: -0.05 },
+                        responses: [
+                            "Hello! How can I help you today?",
+                            "Good to see you again!",
+                            "Greetings, friend!"
+                        ]
+                    },
+                    help: {
+                        playerText: "Can I help you with anything?",
+                        emotional: { happiness: 0.2, energy: 0.1, stress: -0.1 },
+                        responses: [
+                            "That's very kind of you! I could use some help with...",
+                            "How thoughtful! Actually, yes...",
+                            "I appreciate the offer!"
+                        ]
+                    },
+                    question: {
+                        playerText: "I have a question for you...",
+                        emotional: { happiness: 0, energy: -0.05, stress: 0.05 },
+                        responses: [
+                            "Of course, what would you like to know?",
+                            "I'll do my best to answer.",
+                            "Ask away!"
+                        ]
+                    },
+                    compliment: {
+                        playerText: "You're doing great work!",
+                        emotional: { happiness: 0.3, energy: 0.15, stress: -0.15 },
+                        responses: [
+                            "Thank you so much! That means a lot.",
+                            "You're too kind!",
+                            "I really appreciate that!"
+                        ]
+                    },
+                    trade: {
+                        playerText: "Would you like to trade?",
+                        emotional: { happiness: 0.05, energy: -0.05, stress: 0 },
+                        responses: [
+                            "Let me see what I have to offer...",
+                            "Always interested in a good trade!",
+                            "What did you have in mind?"
+                        ]
+                    },
+                    joke: {
+                        playerText: "Want to hear a joke?",
+                        emotional: { happiness: 0.25, energy: 0.1, stress: -0.2 },
+                        responses: [
+                            "Haha! That's a good one!",
+                            "You always know how to make me laugh!",
+                            "Oh, that's funny!"
+                        ]
+                    }
+                };
+                
+                const interaction = interactions[action];
+                if (!interaction) return;
+                
+                // Show speech bubble
+                this.showSpeechBubble(npc, interaction.playerText, true);
+                
+                // Update emotional state
+                npc.emotionalState.happiness = Math.max(0, Math.min(1, 
+                    npc.emotionalState.happiness + interaction.emotional.happiness));
+                npc.emotionalState.energy = Math.max(0, Math.min(1, 
+                    npc.emotionalState.energy + interaction.emotional.energy));
+                npc.emotionalState.stress = Math.max(0, Math.min(1, 
+                    npc.emotionalState.stress + interaction.emotional.stress));
+                
+                // Add memory
+                npc.memories.push({
+                    type: 'interaction',
+                    content: `Player ${action}ed me. ${interaction.playerText}`,
+                    timestamp: Date.now(),
+                    importance: 0.5 + Math.abs(interaction.emotional.happiness)
+                });
+                
+                // Update relationship
+                if (!npc.relationships.has('player')) {
+                    npc.relationships.set('player', {
+                        name: 'Player',
+                        trust: 0.5,
+                        affection: 0.5,
+                        respect: 0.5,
+                        history: []
+                    });
+                }
+                
+                const relationship = npc.relationships.get('player');
+                relationship.trust += interaction.emotional.happiness * 0.1;
+                relationship.affection += interaction.emotional.happiness * 0.15;
+                relationship.respect += Math.abs(interaction.emotional.energy) * 0.1;
+                relationship.history.push({ action, timestamp: Date.now() });
+                
+                // Generate response based on personality and relationship
+                setTimeout(() => {
+                    const responseIndex = Math.floor(Math.random() * interaction.responses.length);
+                    let response = interaction.responses[responseIndex];
+                    
+                    // Modify response based on relationship
+                    if (relationship.affection > 0.7) {
+                        response = response.replace('!', ', my friend!');
+                    }
+                    
+                    this.showSpeechBubble(npc, response, false);
+                    
+                    // Update interaction response panel
+                    const responsePanel = document.getElementById('interaction-response');
+                    responsePanel.innerHTML = `
+                        <div style="margin-top: 1rem; padding: 1rem; background: var(--adaptive-bg); border-radius: 8px;">
+                            <strong>${npc.name}:</strong> ${response}
+                        </div>
+                    `;
+                }, 1000);
+                
+                // Update UI
+                this.renderNPCDetails(npc);
+            }
+            
+            showSpeechBubble(npc, text, isPlayer) {
+                const canvas = document.getElementById('world-canvas');
+                const existingBubbles = canvas.querySelectorAll('.speech-bubble');
+                existingBubbles.forEach(b => b.remove());
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'speech-bubble';
+                bubble.textContent = text;
+                
+                const avatar = Array.from(canvas.querySelectorAll('.npc-avatar'))
+                    .find((a, i) => this.npcs[i].id === npc.id);
+                
+                if (avatar) {
+                    const rect = avatar.getBoundingClientRect();
+                    const canvasRect = canvas.getBoundingClientRect();
+                    
+                    bubble.style.left = `${rect.left - canvasRect.left + 30}px`;
+                    bubble.style.top = `${rect.top - canvasRect.top - 60}px`;
+                    
+                    canvas.appendChild(bubble);
+                    
+                    // Add talking animation
+                    avatar.classList.add('talking');
+                    setTimeout(() => avatar.classList.remove('talking'), 2000);
+                    
+                    // Remove bubble after delay
+                    setTimeout(() => bubble.remove(), 3000);
+                }
+            }
+        }
+        
+        // Initialize the demo
+        const adaptiveNPCWeb = new MockAdaptiveNPCWeb();
+        
+        // Make interaction function global
+        window.interact = (action) => {
+            adaptiveNPCWeb.processInteraction(action);
+        };
+        
+        // Log to console
+        console.log('AdaptiveNPCWeb Demo Initialized!');
+        console.log('Select an NPC and interact with them to see their memories and relationships evolve.');
+    </script>
+</body>
+</html>
